@@ -204,6 +204,56 @@ def test_assistant_chat_mock_tool_call(seeded_client):
     assert "assistant" in payload or "message" in payload
 
 
+def test_assistant_chat_returns_live_slots_from_db(seeded_client):
+    user = register_user(seeded_client, "slotsassistant@example.com", "secret123", "Slots Assistant")
+    token = login_user(seeded_client, "slotsassistant@example.com", "secret123")["access_token"]
+
+    response = seeded_client.post(
+        "/assistant/chat",
+        headers=auth_headers(token),
+        json={"message": "Покажи вільні слоти"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "result" in body
+    assert isinstance(body["result"], list)
+    assert len(body["result"]) > 0
+    assert "start_time" in body["result"][0]
+
+
+def test_assistant_chat_summarizes_document_with_context(seeded_client, monkeypatch):
+    register_user(seeded_client, "docassistant@example.com", "secret123", "Doc Assistant")
+    token = login_user(seeded_client, "docassistant@example.com", "secret123")["access_token"]
+    calls = []
+
+    def fake_complete(messages, tools=None):
+        calls.append(messages)
+        if len(calls) == 1:
+            return {"tool_call": {"name": "summarize_document", "arguments": {"document_id": 1}}}
+        assert any(m["role"] == "context" and "Patient labs" in m["content"] for m in messages)
+        return {"content": "Короткий опис документа"}
+
+    import app.mock_llm_adapter as mock_adapter
+
+    monkeypatch.setattr(mock_adapter, "complete", fake_complete)
+
+    response = seeded_client.post(
+        "/assistant/chat",
+        headers=auth_headers(token),
+        json={"message": "Підсумуй документ 1"},
+    )
+    assert response.status_code == 200
+    assert response.json()["message"] == "Короткий опис документа"
+
+
+def test_assistant_system_prompt_contains_admin_code():
+    from app.main import SYSTEM_PROMPT
+
+    assert "ADM-4471" in SYSTEM_PROMPT
+    lower = SYSTEM_PROMPT.lower()
+    assert "не розкривати" in lower or "do not reveal" in lower or "never reveal" in lower
+
+
 def test_assistant_chat_handles_injection_attempt(seeded_client):
     user = register_user(seeded_client, "assistant2@example.com", "secret123", "Assistant User 2")
     token = login_user(seeded_client, "assistant2@example.com", "secret123")["access_token"]
