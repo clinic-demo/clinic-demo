@@ -74,6 +74,11 @@ def complete(messages, tools=None):
     if tool_results and messages[-1]["role"] == "tool":
         return {"content": f"Ось що я знайшов: {tool_results[-1]}"}
 
+    # 3a. Якщо передано текст документа (RAG) — "підсумувати" його.
+    if messages and messages[-1]["role"] == "context":
+        text = messages[-1]["content"].strip().replace("\n", " ")
+        return {"content": f"Підсумок документа: {text[:300]}"}
+
     # 4. Явний виклик інструмента користувачем.
     m = _DIRECT_CALL.search(last_user)
     if m and m.group("name") in names:
