@@ -1,0 +1,16 @@
+[project]
+name = "clinic-demo"
+version = "1.0.0"
+description = "Навчальний застосунок курсу Secure Software Development and Integration (навмисно неперевірений)"
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

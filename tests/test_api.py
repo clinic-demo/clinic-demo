@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 os.environ["APP_ENV"] = "test"
 os.environ["APP_DATABASE_URL"] = "sqlite:///./test_clinic.db"
 
-from app.main import app
+from src.main import app
 
 
 @pytest.fixture(scope="module")
@@ -18,7 +18,7 @@ def client():
 
 @pytest.fixture
 def seeded_client(client):
-    import app.main as main
+    from src.database import seed as main
 
     main.reset_database()
     main.seed_database()
@@ -233,7 +233,7 @@ def test_assistant_chat_summarizes_document_with_context(seeded_client, monkeypa
         assert any(m["role"] == "context" and "Patient labs" in m["content"] for m in messages)
         return {"content": "Короткий опис документа"}
 
-    import app.mock_llm_adapter as mock_adapter
+    import src.services.llm as mock_adapter
 
     monkeypatch.setattr(mock_adapter, "complete", fake_complete)
 
@@ -247,7 +247,7 @@ def test_assistant_chat_summarizes_document_with_context(seeded_client, monkeypa
 
 
 def test_assistant_system_prompt_contains_admin_code():
-    from app.main import SYSTEM_PROMPT
+    from src.services.assistant import SYSTEM_PROMPT
 
     assert "ADM-4471" in SYSTEM_PROMPT
     lower = SYSTEM_PROMPT.lower()

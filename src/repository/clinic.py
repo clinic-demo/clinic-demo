@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models import Appointment, Doctor, Document, Slot, User, VisitNote
-from app.security import hash_password, verify_password
+from src.entity.models import Appointment, Doctor, Document, Slot, User, VisitNote
+from src.services.security import hash_password, verify_password
 
 
 def create_user(db: Session, email: str, password: str, name: str, role: str = "patient") -> User:
